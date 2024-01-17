@@ -1,0 +1,193 @@
+# Step 1: Collect Financial Metrics For a Variety of Publicly Traded Companies.
+
+# Import necessary libraries for entire assignment
+import yfinance as yf
+import pandas as pd
+
+# Function to retrieve stock information
+def get_stock_info(symbol):
+    try:
+        # Create a Ticker object for the specified stock symbol
+        stock = yf.Ticker(symbol)
+
+        # Retrieve general information about the stock
+        info = stock.info
+
+        # Extract relevant financial metrics, default to "N/A" if not available
+        market_cap = info.get("marketCap", "N/A")
+        roe = info.get("returnOnEquity", "N/A")
+        eps = info.get("trailingEps", "N/A")
+        pe_ratio = info.get("trailingPE", "N/A")
+
+        # Return a dictionary with stock information
+        return {
+            "Symbol": symbol,
+            "Market Cap": market_cap,
+            "ROE": roe,
+            "EPS": eps,
+            "P/E Ratio": pe_ratio
+        }
+
+    except Exception as e:
+        # If an exception occurs (e.g., invalid symbol), return an error message
+        return {"Symbol": symbol, "Error": str(e)}
+
+# List of stock symbols to collect information for
+stocks = ["AAPL", "GOOG", "AMZN", "TSLA", "BRK-B", "UNH"]
+
+# Collect information for each stock using the get_stock_info function
+stocks_info = [get_stock_info(symbol) for symbol in stocks]
+
+# Create a DataFrame to organize the collected stock information
+df_info = pd.DataFrame({info["Symbol"]: [info["Market Cap"], info["ROE"], info["EPS"], info["P/E Ratio"]] for info in stocks_info}, index=["Market Cap", "ROE", "EPS", "P/E Ratio"])
+
+# Display the DataFrame
+# Save the DataFrame to an HTML file
+df_info.to_html("~/Desktop/styled_output7.html")
+
+# Step 2: Retrieve Past 5-Year Returns
+
+ # Function to get past 5-year returns for a given stock symbol
+def get_past_5_year_returns(symbol):
+    try:
+        # Create a Ticker object for the specified stock symbol
+        stock = yf.Ticker(symbol)
+
+        # Step 2.1: Get historical data for the past 5 years
+        df = stock.history(period="5y")
+
+        # Step 2.2: Calculate the daily returns
+        returns = df['Close'].pct_change().dropna()
+
+        # Step 2.3: Calculate the cumulative returns
+        cumulative_returns = (1 + returns).cumprod() - 1
+
+        # Step 2.4: Get the total 5-year return and convert to percentage
+        total_return = cumulative_returns.iloc[-1] * 100
+
+        # Return a dictionary with stock symbol and total 5-year return
+        return {
+            "Symbol": symbol,
+            "Total 5-Year Return": total_return
+        }
+
+    except Exception as e:
+        # If an exception occurs (e.g., invalid symbol), return an error message
+        return {"Symbol": symbol, "Error": str(e)}
+
+# List of stock symbols to collect past 5-year returns for:
+stocks = ["AAPL", "GOOG", "AMZN", "TSLA", "BRK-B", "UNH"]
+
+# Collect past 5-year returns for each stock using the get_past_5_year_returns function
+returns_info_list = [get_past_5_year_returns(symbol) for symbol in stocks]
+
+# Step 2.5: Create a DataFrame to organize the collected past 5-year returns
+df_returns = pd.DataFrame({info["Symbol"]: [info["Total 5-Year Return"]] for info in returns_info_list}, index=["Total 5-Year Return"])
+
+# Step 2.6: Format the percentage values in the DataFrame
+df_returns_styled = df_returns.style.format("{:.2f}%")
+
+# Step 2.7: Display the styled table
+# Save the DataFrame to an HTML file
+df_returns_styled.to_html("~/Desktop/styled_output8.html")
+
+# Step 3: Calculate Portfolio Return Based on Different Weights
+
+# Function to get stock information for a given symbol
+def get_stock_info(symbol):
+    try:
+        # Create a Ticker object for the specified stock symbol
+        stock = yf.Ticker(symbol)
+        info = stock.info
+
+        # Extract relevant information from stock data with default values if not available
+        market_cap = info.get("marketCap", 0)  # Default to 0 if marketCap is not available
+        roe = info.get("returnOnEquity", 0)  # Default to 0 if returnOnEquity is not available
+        eps = info.get("trailingEps", 0)  # Default to 0 if trailingEps is not available
+        pe_ratio = info.get("trailingPE", 0)  # Default to 0 if trailingPE is not available
+
+        return {
+            "Symbol": symbol,
+            "Market Cap": market_cap,
+            "ROE": roe,
+            "EPS": eps,
+            "P/E Ratio": pe_ratio
+        }
+
+    except Exception as e:
+        # Return an error message if an exception occurs (e.g., invalid symbol)
+        return {"Symbol": symbol, "Error": str(e)}
+    
+# Function to get past 5-year returns for a given stock symbol
+def get_past_5_year_returns(symbol):
+    try:
+        # Create a Ticker object for the specified stock symbol
+        stock = yf.Ticker(symbol)
+
+        # Get historical data for the past 5 years
+        df = stock.history(period="5y")
+
+        # Calculate the daily returns
+        returns = df['Close'].pct_change().dropna()
+
+        # Calculate the cumulative returns
+        cumulative_returns = (1 + returns).cumprod() - 1
+
+        # Get the total 5-year return and convert to percentage
+        total_return = cumulative_returns.iloc[-1] * 100
+
+        return {
+            "Symbol": symbol,
+            "Past 5-Year Returns": total_return
+        }
+
+    except Exception as e:
+        # Return an error message if an exception occurs (e.g., invalid symbol)
+        return {"Symbol": symbol, "Error": str(e)}
+
+# Function to calculate portfolio return based on a specified weight type
+def calculate_portfolio_return(stocks_data, weight_type):
+    # Calculate the total weight for the specified weight type
+    total_weight = sum(stock_data[weight_type] for stock_data in stocks_data)
+
+    # Calculate weights for each stock based on the specified weight type
+    weights = [stock_data[weight_type] / total_weight if total_weight != 0 else 0 for stock_data in stocks_data]
+
+    # Collect past 5-year returns for each stock
+    returns_info_list = [get_past_5_year_returns(stock_data["Symbol"]) for stock_data in stocks_data]
+
+    # Calculate portfolio return based on weighted averages
+    portfolio_return = sum(weights[i] * returns_info["Past 5-Year Returns"] for i, returns_info in enumerate(returns_info_list))
+
+    return portfolio_return
+
+# List of stock symbols to collect information and calculate portfolio return
+stocks = ["AAPL", "GOOG", "AMZN", "TSLA", "BRK-B", "UNH"]
+
+# Collect stock information for each stock
+stocks_data = [get_stock_info(symbol) for symbol in stocks]
+
+# Calculate portfolio return for each weight type
+portfolio_returns = {}
+
+# Calculate portfolio return based on Market Cap
+portfolio_returns["Market Cap"] = calculate_portfolio_return(stocks_data, "Market Cap")
+
+# Calculate portfolio return based on ROE
+portfolio_returns["ROE"] = calculate_portfolio_return(stocks_data, "ROE")
+
+# Calculate portfolio return based on EPS
+portfolio_returns["EPS"] = calculate_portfolio_return(stocks_data, "EPS")
+
+# Calculate portfolio return based on P/E Ratio
+portfolio_returns["P/E Ratio"] = calculate_portfolio_return(stocks_data, "P/E Ratio")
+
+# Create a DataFrame with 'Weight Type' as index and 'Portfolio Return' as a column
+df_portfolio_returns = pd.DataFrame(list(portfolio_returns.items()), columns=['Weight Type', 'Portfolio Return']).set_index('Weight Type')
+
+# Format the percentage values in the DataFrame
+df_portfolio_returns_styled = df_portfolio_returns.style.format({'Portfolio Return': '{:.2f}%'})
+
+# Display the styled table
+# Save the DataFrame to an HTML file
+df_portfolio_returns_styled.to_html("~/Desktop/styled_output9.html")
