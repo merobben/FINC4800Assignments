@@ -1,0 +1,55 @@
+import pandas as pd
+import yfinance as yf
+
+# Define the S&P 500 sector ETF symbols
+sector_symbols = ['XLC', 'XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLRE', 'XLK', 'XLU']
+
+def fetch_yahoo_finance_data(symbol, interval):
+    ticker = yf.Ticker(symbol)
+    data = ticker.history(period='1y', interval=interval)
+    return data
+
+def get_sector_performance():
+    sector_returns_daily = pd.DataFrame(columns=['Symbol', 'Date', 'DailyReturn'])
+    sector_returns_weekly = pd.DataFrame(columns=['Symbol', 'WeeklyReturn'])
+
+    for symbol in sector_symbols:
+        # Fetch daily time series data
+        daily_data = fetch_yahoo_finance_data(symbol, interval='1d')
+
+        # Fetch weekly time series data
+        weekly_data = fetch_yahoo_finance_data(symbol, interval='1wk')
+
+        # Extract and append daily and weekly returns to DataFrames
+        sector_returns_daily = append_daily_returns(sector_returns_daily, symbol, daily_data)
+        sector_returns_weekly = append_weekly_returns(sector_returns_weekly, symbol, weekly_data)
+
+    # Calculate average daily and weekly returns for each sector
+    avg_daily_returns = sector_returns_daily.groupby('Symbol')['DailyReturn'].mean().reset_index()
+    avg_weekly_returns = sector_returns_weekly.groupby('Symbol')['WeeklyReturn'].mean().reset_index()
+
+    # Format as percentages
+    avg_daily_returns['DailyReturn'] = (avg_daily_returns['DailyReturn'] * 100).round(2)
+    avg_weekly_returns['WeeklyReturn'] = (avg_weekly_returns['WeeklyReturn'] * 100).round(2)
+
+    return avg_daily_returns, avg_weekly_returns
+
+def append_daily_returns(dataframe, sector, data):
+    data['DailyReturn'] = data['Close'].pct_change()
+    data['Symbol'] = sector  # Add a 'Symbol' column for the sector
+    dataframe = pd.concat([dataframe, data.reset_index()[['Symbol', 'Date', 'DailyReturn']]], ignore_index=True)
+    return dataframe
+
+def append_weekly_returns(dataframe, sector, data):
+    data['WeeklyReturn'] = data['Close'].resample('W-Mon').ffill().pct_change()
+    data['Symbol'] = sector  # Add a 'Symbol' column for the sector
+    dataframe = pd.concat([dataframe, data.reset_index()[['Symbol', 'WeeklyReturn']]], ignore_index=True)
+    return dataframe
+
+if __name__ == '__main__':
+    avg_daily_returns, avg_weekly_returns = get_sector_performance()
+    print("Average Daily Returns:")
+    print(avg_daily_returns)
+
+    print("\nAverage Weekly Returns:")
+    print(avg_weekly_returns)
